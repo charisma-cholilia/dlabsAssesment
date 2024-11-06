@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Pengguna GitHub & LocalStorage</title>
+    <style>
+        html{
+            background-color: beige;
+        }
+        body{
+            padding: 1em 2em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        #loading, #error {
+            display: none;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Data Pengguna GitHub & LocalStorage</h2>
+
+    <!-- Form untuk menambahkan atau memperbarui pengguna -->
+    <div id="userForm">
+        <h3>Tambah/Edit Pengguna</h3>
+        <input type="hidden" id="editIndex">
+        <label>Nama: </label><input type="text" id="nama"><span class="error-message" id="namaError"></span><br><br>
+        <label>Email: </label><input type="email" id="email"><span class="error-message" id="emailError"></span><br><br>
+        <label>Umur: </label><input type="number" id="umur"><span class="error-message" id="umurError"></span><br><br>
+        <label>Status: </label>
+        <select id="status">
+            <option value="aktif">Aktif</option>
+            <option value="tidak_aktif">Tidak Aktif</option>
+        </select><br><br>
+        <button onclick="addOrUpdateUser()">Simpan</button>
+    </div>
+
+    <div id="loading">Loading data...</div>
+    <div id="error">Error: Gagal mengambil data.</div>
+
+    <!-- Tabel untuk menampilkan data pengguna -->
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Umur</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <script>
+        // URL API publik untuk mengambil data pengguna GitHub
+        const apiUrl = "https://api.github.com/users";
+        let users = loadUsersFromLocalStorage();
+
+        // Fungsi untuk mengambil data dari localStorage jika ada
+        function loadUsersFromLocalStorage() {
+            const localData = localStorage.getItem("users");
+            return localData ? JSON.parse(localData) : [];
+        }
+
+        // Fungsi untuk menyimpan data pengguna ke dalam localStorage
+        function saveUsersToLocalStorage() {
+            localStorage.setItem("users", JSON.stringify(users));
+        }
+
+        // Fungsi async untuk mengambil data dari API GitHub
+        async function fetchData() {
+            // Tampilkan pesan loading saat mengambil data
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("error").style.display = "none";
+
+            try {
+                const response = await fetch(apiUrl);
+
+                // Cek jika response berhasil, jika gagal lempar error
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+
+                const data = await response.json();
+                // Mapping data API agar sesuai dengan struktur yang kita inginkan
+                users = data.map(user => ({
+                    nama: user.login,
+                    email: "N/A", // Email tidak tersedia di API ini
+                    umur: 0, // Umur tidak tersedia di API ini
+                    status: "aktif"
+                }));
+
+                // Simpan data ke localStorage
+                saveUsersToLocalStorage();
+                // Render data ke tabel
+                renderTable(users);
+            } catch (error) {
+                // Tampilkan pesan error jika ada masalah
+                document.getElementById("error").style.display = "block";
+                alert("Error: Gagal mengambil data dari API.");
+                console.error("Fetch error:", error);
+            } finally {
+                // Sembunyikan pesan loading setelah data diambil atau ada error
+                document.getElementById("loading").style.display = "none";
+            }
+        }
+
+        // Fungsi untuk menampilkan data pengguna di tabel HTML
+        function renderTable(data) {
+            const tableBody = document.getElementById("tableBody");
+            tableBody.innerHTML = '';
+
+            data.forEach((user, index) => {
+                const row = `<tr>
+                    <td>${user.nama}</td>
+                    <td>${user.email}</td>
+                    <td>${user.umur}</td>
+                    <td>${user.status}</td>
+                    <td>
+                        <button onclick="editUser(${index})">Edit</button>
+                        <button onclick="deleteUser(${index})">Hapus</button>
+                    </td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Fungsi untuk memvalidasi input form
+        function validateForm(nama, email, umur) {
+            let isValid = true;
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            clearErrorMessages();
+
+            if (!nama.trim()) {
+                document.getElementById("namaError").textContent = "Nama tidak boleh kosong.";
+                isValid = false;
+            }
+            if (!emailPattern.test(email)) {
+                document.getElementById("emailError").textContent = "Email tidak valid.";
+                isValid = false;
+            }
+            if (isNaN(umur) || umur <= 0) {
+                document.getElementById("umurError").textContent = "Umur harus berupa angka positif.";
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        // Fungsi untuk membersihkan pesan error
+        function clearErrorMessages() {
+            document.getElementById("namaError").textContent = "";
+            document.getElementById("emailError").textContent = "";
+            document.getElementById("umurError").textContent = "";
+        }
+
+        // Fungsi untuk menambah atau memperbarui data pengguna
+        function addOrUpdateUser() {
+            const nama = document.getElementById('nama').value;
+            const email = document.getElementById('email').value;
+            const umur = parseInt(document.getElementById('umur').value);
+            const status = document.getElementById('status').value;
+            const editIndex = document.getElementById('editIndex').value;
+
+            // Validasi data sebelum menyimpan
+            if (!validateForm(nama, email, umur)) {
+                return;
+            }
+
+            // Tambah atau update pengguna
+            if (editIndex === '') {
+                users.push({ nama, email, umur, status });
+            } else {
+                users[editIndex] = { nama, email, umur, status };
+                document.getElementById('editIndex').value = '';
+            }
+
+            saveUsersToLocalStorage();
+            renderTable(users);
+            clearForm();
+        }
+
+        // Fungsi untuk mengisi form dengan data yang dipilih untuk di-edit
+        function editUser(index) {
+            const user = users[index];
+            document.getElementById('nama').value = user.nama;
+            document.getElementById('email').value = user.email;
+            document.getElementById('umur').value = user.umur;
+            document.getElementById('status').value = user.status;
+            document.getElementById('editIndex').value = index;
+        }
+
+        // Fungsi untuk menghapus pengguna dari daftar
+        function deleteUser(index) {
+            users.splice(index, 1);
+            saveUsersToLocalStorage();
+            renderTable(users);
+        }
+
+        // Fungsi untuk membersihkan form input
+        function clearForm() {
+            document.getElementById('nama').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('umur').value = '';
+            document.getElementById('status').value = 'aktif';
+            document.getElementById('editIndex').value = '';
+            clearErrorMessages();
+        }
+
+        // Muat data dari API jika localStorage kosong, jika tidak langsung tampilkan data dari localStorage
+        if (users.length === 0) {
+            fetchData();
+        } else {
+            renderTable(users);
+        }
+    </script>
+
+</body>
+</html>

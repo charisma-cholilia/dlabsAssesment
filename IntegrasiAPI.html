@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Pengguna GitHub</title>
+    <style>
+        html{
+            background-color: beige;
+        }
+        body{
+            padding: 1em 2em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        #loading, #error {
+            display: none;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Data Pengguna GitHub</h2>
+
+    <div id="loading">Loading data...</div>
+    <div id="error">Error: Gagal mengambil data.</div>
+
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Profile</th>
+                <th>URL</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <script>
+        const apiUrl = "https://api.github.com/users";
+        
+        async function fetchData() {
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("error").style.display = "none";
+
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+
+                const data = await response.json();
+                renderTable(data);
+            } catch (error) {
+                document.getElementById("error").style.display = "block";
+                console.error("Fetch error:", error);
+            } finally {
+                document.getElementById("loading").style.display = "none";
+            }
+        }
+
+        function renderTable(users) {
+            const tableBody = document.getElementById("tableBody");
+            tableBody.innerHTML = '';
+
+            users.forEach(user => {
+                const row = `<tr>
+                    <td>${user.login}</td>
+                    <td><img src="${user.avatar_url}" alt="${user.login}" width="50"></td>
+                    <td><a href="${user.html_url}" target="_blank">${user.html_url}</a></td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Panggil fungsi fetchData saat halaman dimuat
+        fetchData();
+    </script>
+
+</body>
+</html>

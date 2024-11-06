@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Pengguna</title>
+    <style>
+        html{
+            background-color: beige;
+        }
+        body{
+            padding: 1em 2em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            cursor: pointer;
+            background-color: #f2f2f2;
+        }
+        #filter {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Daftar Pengguna</h2>
+
+    <label for="filter">Filter Status Keanggotaan:</label>
+    <select id="filter" onchange="filterData()">
+        <option value="all">Semua</option>
+        <option value="aktif">Aktif</option>
+        <option value="tidak_aktif">Tidak Aktif</option>
+    </select>
+
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th onclick="sortData('nama')">Nama</th>
+                <th>Email</th>
+                <th onclick="sortData('umur')">Umur</th>
+                <th onclick="sortData('status')">Status Keanggotaan</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <script>
+        // Data pengguna
+        const users = [
+            { nama: 'Ali', email: 'ali@example.com', umur: 28, status: 'aktif' },
+            { nama: 'Budi', email: 'budi@example.com', umur: 22, status: 'tidak_aktif' },
+            { nama: 'Cici', email: 'cici@example.com', umur: 35, status: 'aktif' },
+            { nama: 'Dewi', email: 'dewi@example.com', umur: 30, status: 'aktif' },
+            { nama: 'Eko', email: 'eko@example.com', umur: 26, status: 'tidak_aktif' }
+        ];
+
+        let filteredData = [...users];
+        let sortDirection = { nama: 1, umur: 1, status: 1 };
+
+        function renderTable(data) {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+            data.forEach(user => {
+                const row = `<tr>
+                    <td>${user.nama}</td>
+                    <td>${user.email}</td>
+                    <td>${user.umur}</td>
+                    <td>${user.status}</td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        function sortData(field) {
+            filteredData.sort((a, b) => {
+                if (a[field] > b[field]) return sortDirection[field];
+                if (a[field] < b[field]) return -sortDirection[field];
+                return 0;
+            });
+            sortDirection[field] *= -1;
+            renderTable(filteredData);
+        }
+
+        function filterData() {
+            const filterValue = document.getElementById('filter').value;
+            if (filterValue === 'all') {
+                filteredData = [...users];
+            } else {
+                filteredData = users.filter(user => user.status === filterValue);
+            }
+            renderTable(filteredData);
+        }
+
+        // Render tabel awal
+        renderTable(filteredData);
+    </script>
+
+</body>
+</html>

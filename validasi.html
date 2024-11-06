@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Pengguna GitHub & LocalStorage</title>
+    <style>
+        html{
+            background-color: beige;
+        }
+        body{
+            padding: 1em 2em;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        #loading, #error {
+            display: none;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .error-message {
+            color: red;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Data Pengguna GitHub & LocalStorage</h2>
+
+    <!-- Form untuk menambahkan atau memperbarui pengguna -->
+    <div id="userForm">
+        <h3>Tambah/Edit Pengguna</h3>
+        <input type="hidden" id="editIndex">
+        <label>Nama: </label><input type="text" id="nama"><span class="error-message" id="namaError"></span><br><br>
+        <label>Email: </label><input type="email" id="email"><span class="error-message" id="emailError"></span><br><br>
+        <label>Umur: </label><input type="number" id="umur"><span class="error-message" id="umurError"></span><br><br>
+        <label>Status: </label>
+        <select id="status">
+            <option value="aktif">Aktif</option>
+            <option value="tidak_aktif">Tidak Aktif</option>
+        </select><br><br>
+        <button onclick="addOrUpdateUser()">Simpan</button>
+    </div>
+
+    <div id="loading">Loading data...</div>
+    <div id="error">Error: Gagal mengambil data.</div>
+
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th>Nama</th>
+                <th>Email</th>
+                <th>Umur</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <script>
+        const apiUrl = "https://api.github.com/users";
+        let users = loadUsersFromLocalStorage();
+
+        // Fungsi untuk mengambil data dari localStorage
+        function loadUsersFromLocalStorage() {
+            const localData = localStorage.getItem("users");
+            return localData ? JSON.parse(localData) : [];
+        }
+
+        // Fungsi untuk menyimpan data ke localStorage
+        function saveUsersToLocalStorage() {
+            localStorage.setItem("users", JSON.stringify(users));
+        }
+
+        async function fetchData() {
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("error").style.display = "none";
+
+            try {
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) {
+                    throw new Error("Network response was not ok");
+                }
+
+                const data = await response.json();
+                users = data.map(user => ({
+                    nama: user.login,
+                    email: "N/A", // Email tidak tersedia di API ini
+                    umur: 0, // Umur tidak tersedia di API ini
+                    status: "aktif"
+                }));
+
+                saveUsersToLocalStorage();
+                renderTable(users);
+            } catch (error) {
+                document.getElementById("error").style.display = "block";
+                alert("Error: Gagal mengambil data dari API.");
+                console.error("Fetch error:", error);
+            } finally {
+                document.getElementById("loading").style.display = "none";
+            }
+        }
+
+        function renderTable(data) {
+            const tableBody = document.getElementById("tableBody");
+            tableBody.innerHTML = '';
+
+            data.forEach((user, index) => {
+                const row = `<tr>
+                    <td>${user.nama}</td>
+                    <td>${user.email}</td>
+                    <td>${user.umur}</td>
+                    <td>${user.status}</td>
+                    <td>
+                        <button onclick="editUser(${index})">Edit</button>
+                        <button onclick="deleteUser(${index})">Hapus</button>
+                    </td>
+                </tr>`;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        function validateForm(nama, email, umur) {
+            let isValid = true;
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            clearErrorMessages();
+
+            if (!nama.trim()) {
+                document.getElementById("namaError").textContent = "Nama tidak boleh kosong.";
+                isValid = false;
+            }
+            if (!emailPattern.test(email)) {
+                document.getElementById("emailError").textContent = "Email tidak valid.";
+                isValid = false;
+            }
+            if (isNaN(umur) || umur <= 0) {
+                document.getElementById("umurError").textContent = "Umur harus berupa angka positif.";
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function clearErrorMessages() {
+            document.getElementById("namaError").textContent = "";
+            document.getElementById("emailError").textContent = "";
+            document.getElementById("umurError").textContent = "";
+        }
+
+        function addOrUpdateUser() {
+            const nama = document.getElementById('nama').value;
+            const email = document.getElementById('email').value;
+            const umur = parseInt(document.getElementById('umur').value);
+            const status = document.getElementById('status').value;
+            const editIndex = document.getElementById('editIndex').value;
+
+            if (!validateForm(nama, email, umur)) {
+                return; // Jangan kirim form jika data tidak valid
+            }
+
+            if (editIndex === '') {
+                users.push({ nama, email, umur, status });
+            } else {
+                users[editIndex] = { nama, email, umur, status };
+                document.getElementById('editIndex').value = ''; // Reset form
+            }
+
+            saveUsersToLocalStorage();
+            renderTable(users);
+            clearForm();
+        }
+
+        function editUser(index) {
+            const user = users[index];
+            document.getElementById('nama').value = user.nama;
+            document.getElementById('email').value = user.email;
+            document.getElementById('umur').value = user.umur;
+            document.getElementById('status').value = user.status;
+            document.getElementById('editIndex').value = index;
+        }
+
+        function deleteUser(index) {
+            users.splice(index, 1);
+            saveUsersToLocalStorage();
+            renderTable(users);
+        }
+
+        function clearForm() {
+            document.getElementById('nama').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('umur').value = '';
+            document.getElementById('status').value = 'aktif';
+            document.getElementById('editIndex').value = '';
+            clearErrorMessages();
+        }
+
+        if (users.length === 0) {
+            fetchData();
+        } else {
+            renderTable(users);
+        }
+    </script>
+
+</body>
+</html>

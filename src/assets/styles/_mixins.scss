@@ -1,0 +1,12 @@
+// Mixin untuk font dan elemen sentral
+@mixin font-style($size, $weight: normal) {
+    font-size: $size;
+    font-weight: $weight;
+  }
+  
+  @mixin center-flex {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  

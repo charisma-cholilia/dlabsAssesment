@@ -1,0 +1,27 @@
+@import 'variables';
+@import 'mixins';
+@import 'responsive';
+
+// Style global
+body {
+  font-family: $font-family;
+  background-color: #f4f4f9;
+  color: #333;
+}
+
+// Style untuk form
+.form-container {
+  @include center-flex;
+  background-color: $primary-color;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+button {
+  background-color: $secondary-color;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}

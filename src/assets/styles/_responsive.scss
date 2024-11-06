@@ -1,0 +1,11 @@
+// Aturan media query
+@media (max-width: 768px) {
+    body {
+      font-size: 14px;
+    }
+    
+    .form-container {
+      flex-direction: column;
+    }
+  }
+  
